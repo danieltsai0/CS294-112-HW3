@@ -311,6 +311,10 @@ def learn(env,
         if t % LOG_EVERY_N_STEPS == 0 and model_initialized:
             print("Timestep %d" % (t,))
             print("mean reward (100 episodes) %f" % mean_episode_reward)
+            # write out to file
+            with open("mean_reward.txt", "a+") as f:
+                to_write = str(t)+","+str(mean_episode_reward)+"\n"
+                f.write(to_write)
             print("best mean reward %f" % best_mean_episode_reward)
             print("episodes %d" % len(episode_rewards))
             print("exploration %f" % exploration.value(t))
