@@ -1,11 +1,11 @@
-import sys
-import gym.spaces
-import itertools
-import numpy as np
+import sys 
+import gym.spaces 
+import itertools 
+import numpy as np 
 import random
-import tensorflow                as tf
-import tensorflow.contrib.layers as layers
-from collections import namedtuple
+import tensorflow as tf 
+import tensorflow.contrib.layers as layers 
+from collections import namedtuple 
 from dqn_utils import *
 
 OptimizerSpec = namedtuple("OptimizerSpec", ["constructor", "kwargs", "lr_schedule"])
@@ -126,8 +126,25 @@ def learn(env,
     # q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='q_func')
     # Older versions of TensorFlow may require using "VARIABLES" instead of "GLOBAL_VARIABLES"
     ######
-    
-    # YOUR CODE HERE
+
+    # prep done mask for use
+    done_mask = tf.multiply(tf.subtract(done_mask_ph,1),-1)
+    # prep action matrix
+    act_t = tf.one_hot(act_t_ph, depth=num_actions, name="action_one_hot")
+    # get network q value and actions
+    q_values = q_func(obs_t_float, num_actions, scope="q_func", reuse=False)
+    q_action = tf.argmax(q_values, axis=1)
+    q_values_eval = tf.reduce_max(tf.multiply(q_values, act_t), axis=1)
+    # get target q value
+    q_values_t = q_func(obs_tp1_float, num_actions, scope="q_func_t", reuse=False)
+    q_value_t = tf.multiply(tf.reduce_max(q_values_t, axis=1), done_mask)
+    # compute target value
+    y = tf.add(rew_t_ph,tf.multiply(gamma, q_value_t))
+    # compute total error
+    total_error = tf.reduce_mean(tf.square(tf.subtract(y, q_values_eval)))
+    # get variables    
+    q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='q_func')
+    target_q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='q_func_t')
 
     ######
 
@@ -155,7 +172,8 @@ def learn(env,
     mean_episode_reward      = -float('nan')
     best_mean_episode_reward = -float('inf')
     last_obs = env.reset()
-    LOG_EVERY_N_STEPS = 10000
+    LOG_EVERY_N_STEPS = 10000 #10000
+    epsilon = .05
 
     for t in itertools.count():
         ### 1. Check stopping criterion
@@ -193,9 +211,24 @@ def learn(env,
         # might as well be random, since you haven't trained your net...)
 
         #####
-        
-        # YOUR CODE HERE
 
+        # put last observation into replay buffer and encode it for use in network
+        idx = replay_buffer.store_frame(last_obs)
+        last_obs = replay_buffer.encode_recent_observation()
+        # generate next action
+        if not model_initialized or random.random() < exploration.value(t):
+            action = random.randrange(num_actions)
+        else: 
+            action = session.run(q_action, feed_dict={obs_t_ph : last_obs[None,:]})
+        # take action in env
+        obs, reward, done, info = env.step(action)
+        # store rest of transition into replay buffer
+        replay_buffer.store_effect(idx, action, reward, done)
+        # check if end condition reached
+        if done:
+            obs = env.reset()
+        # update last_obs
+        last_obs = obs
         #####
 
         # at this point, the environment should have been advanced one step (and
@@ -243,9 +276,30 @@ def learn(env,
             # you should update every target_update_freq steps, and you may find the
             # variable num_param_updates useful for this (it was initialized to 0)
             #####
-            
-            # YOUR CODE HERE
 
+            # sample rom replay_buffer
+            obs_t_batch, act_batch, rew_batch, obs_tp1_batch, done_mask = replay_buffer.sample(batch_size)
+            # check if network is initialized
+            if not model_initialized:
+                initialize_interdependent_variables(session, tf.global_variables(), {
+                       obs_t_ph: obs_t_batch,
+                       obs_tp1_ph: obs_tp1_batch,
+                   })
+                model_initialized = True
+
+            # update target network
+            if num_param_updates % target_update_freq == 0:
+                session.run(update_target_fn)
+
+            # train network
+            session.run(train_fn, feed_dict={obs_t_ph: obs_t_batch,
+                                      act_t_ph: act_batch,
+                                      rew_t_ph: rew_batch,
+                                      obs_tp1_ph: obs_tp1_batch, 
+                                      done_mask_ph: done_mask,
+                                      learning_rate: optimizer_spec.lr_schedule.value(t)})
+
+            num_param_updates += 1
             #####
 
         ### 4. Log progress

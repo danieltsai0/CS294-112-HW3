@@ -59,7 +59,7 @@ def atari_learn(env,
             (num_iterations / 2, 0.01),
         ], outside_value=0.01
     )
-
+    # 1000000
     dqn.learn(
         env,
         q_func=atari_model,
@@ -67,7 +67,7 @@ def atari_learn(env,
         session=session,
         exploration=exploration_schedule,
         stopping_criterion=stopping_criterion,
-        replay_buffer_size=1000000,
+        replay_buffer_size=100000,
         batch_size=32,
         gamma=0.99,
         learning_starts=50000,
