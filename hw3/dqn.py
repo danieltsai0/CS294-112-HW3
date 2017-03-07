@@ -172,7 +172,7 @@ def learn(env,
     mean_episode_reward      = -float('nan')
     best_mean_episode_reward = -float('inf')
     last_obs = env.reset()
-    LOG_EVERY_N_STEPS = 10000 #10000
+    LOG_EVERY_N_STEPS = 10000
     epsilon = .05
 
     for t in itertools.count():
@@ -288,7 +288,7 @@ def learn(env,
                 model_initialized = True
 
             # update target network
-            if num_param_updates % target_update_freq == 0:
+            if model_initialized and num_param_updates % target_update_freq == 0:
                 session.run(update_target_fn)
 
             # train network
