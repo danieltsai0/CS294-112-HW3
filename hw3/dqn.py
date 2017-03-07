@@ -130,7 +130,7 @@ def learn(env,
     # prep done mask for use
     done_mask = tf.abs(tf.subtract(done_mask_ph,1))
     # prep action matrix
-    act_t = tf.one_hot(act_t_ph, depth=num_actions, name="action_one_hot")
+    act_t = tf.one_hot(act_t_ph, depth=num_actions, on_value=1.0, off_value=0.0, dtype=tf.float32, name="action_one_hot")
     # get network q value and actions
     q_values = q_func(obs_t_float, num_actions, scope="q_func", reuse=False)
     q_action = tf.argmax(q_values, axis=1)
@@ -293,7 +293,7 @@ def learn(env,
                 session.run(update_target_fn)
 
             # train network
-            session.run(train_fn, feed_dict={obs_t_ph: obs_t_batch,
+            session.run([total_error,train_fn], feed_dict={obs_t_ph: obs_t_batch,
                                       act_t_ph: act_batch,
                                       rew_t_ph: rew_batch,
                                       obs_tp1_ph: obs_tp1_batch, 
