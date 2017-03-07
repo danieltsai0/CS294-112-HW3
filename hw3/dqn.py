@@ -219,7 +219,7 @@ def learn(env,
         if not model_initialized or random.random() <= exploration.value(t):
             action = random.randrange(num_actions)
         else: 
-            action = session.run(q_action, feed_dict={obs_t_ph : last_obs[None,:]})
+            action = session.run(q_action, feed_dict={obs_t_ph : last_obs[None,:]})[0]
         # take action in env
         obs, reward, done, info = env.step(action)
         # store rest of transition into replay buffer
