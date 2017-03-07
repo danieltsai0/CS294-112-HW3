@@ -216,7 +216,7 @@ def learn(env,
         idx = replay_buffer.store_frame(last_obs)
         last_obs = replay_buffer.encode_recent_observation()
         # generate next action
-        if not model_initialized or random.random() < exploration.value(t):
+        if not model_initialized or random.random() <= exploration.value(t):
             action = random.randrange(num_actions)
         else: 
             action = session.run(q_action, feed_dict={obs_t_ph : last_obs[None,:]})
