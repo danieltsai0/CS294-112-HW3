@@ -130,11 +130,13 @@ def learn(env,
     # prep done mask for use
     done_mask = tf.abs(tf.subtract(done_mask_ph,1))
     # prep action matrix
-    act_t = tf.one_hot(act_t_ph, depth=num_actions, on_value=1.0, off_value=0.0, dtype=tf.float32, name="action_one_hot")
+    # act_t = tf.one_hot(act_t_ph, depth=num_actions, on_value=1.0, off_value=0.0, dtype=tf.float32, name="action_one_hot")
+    act_t = tf.transpose(tf.stack([tf.to_int32(tf.range(batch_size)),act_t_ph]))
     # get network q value and actions
     q_values = q_func(obs_t_float, num_actions, scope="q_func", reuse=False)
     q_action = tf.argmax(q_values, axis=1)
-    q_values_eval = tf.reduce_max(tf.multiply(q_values, act_t), axis=1)
+    # q_values_eval = tf.reduce_max(tf.multiply(q_values, act_t), axis=1)
+    q_values_eval = tf.gather_nd(q_values, act_t)
     # get target q value
     q_values_t = q_func(obs_tp1_float, num_actions, scope="q_func_t", reuse=False)
     q_value_t = tf.multiply(tf.reduce_max(q_values_t, axis=1), done_mask)
@@ -285,7 +287,6 @@ def learn(env,
                        obs_t_ph: obs_t_batch,
                        obs_tp1_ph: obs_tp1_batch,
                    })
-                session.run(update_target_fn)
                 model_initialized = True
 
             # update target network
