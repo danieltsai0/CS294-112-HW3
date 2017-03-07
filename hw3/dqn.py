@@ -128,7 +128,7 @@ def learn(env,
     ######
 
     # prep done mask for use
-    done_mask = tf.multiply(tf.subtract(done_mask_ph,1),-1)
+    done_mask = tf.abs(tf.subtract(done_mask_ph,1))
     # prep action matrix
     act_t = tf.one_hot(act_t_ph, depth=num_actions, name="action_one_hot")
     # get network q value and actions
@@ -141,7 +141,7 @@ def learn(env,
     # compute target value
     y = tf.add(rew_t_ph,tf.multiply(gamma, q_value_t))
     # compute total error
-    total_error = tf.reduce_mean(tf.square(tf.subtract(y, q_values_eval)))
+    total_error = tf.reduce_sum(tf.square(tf.subtract(y, q_values_eval)))
     # get variables    
     q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='q_func')
     target_q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='q_func_t')
@@ -285,6 +285,7 @@ def learn(env,
                        obs_t_ph: obs_t_batch,
                        obs_tp1_ph: obs_tp1_batch,
                    })
+                session.run(update_target_fn)
                 model_initialized = True
 
             # update target network
