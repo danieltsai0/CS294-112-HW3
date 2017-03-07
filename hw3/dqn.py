@@ -285,6 +285,7 @@ def learn(env,
                        obs_t_ph: obs_t_batch,
                        obs_tp1_ph: obs_tp1_batch,
                    })
+                session.run(update_target_fn)
                 model_initialized = True
 
             # update target network
