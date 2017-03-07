@@ -141,7 +141,7 @@ def learn(env,
     # compute target value
     y = tf.add(rew_t_ph,tf.multiply(gamma, q_value_t))
     # compute total error
-    total_error = tf.reduce_sum(tf.square(tf.subtract(y, q_values_eval)))
+    total_error = tf.reduce_mean(tf.square(tf.subtract(y, q_values_eval)))
     # get variables    
     q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='q_func')
     target_q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='q_func_t')
@@ -278,26 +278,25 @@ def learn(env,
             #####
 
             # sample rom replay_buffer
-            obs_t_batch, act_batch, rew_batch, obs_tp1_batch, done_mask = replay_buffer.sample(batch_size)
+            obs_t_batch, act_batch, rew_batch, obs_tp1_batch, done_batch = replay_buffer.sample(batch_size)
             # check if network is initialized
             if not model_initialized:
                 initialize_interdependent_variables(session, tf.global_variables(), {
                        obs_t_ph: obs_t_batch,
                        obs_tp1_ph: obs_tp1_batch,
                    })
-                session.run(update_target_fn)
                 model_initialized = True
 
             # update target network
-            if model_initialized and num_param_updates % target_update_freq == 0:
+            if model_initialized and num_param_updates >= target_update_freq and num_param_updates % target_update_freq == 0:
                 session.run(update_target_fn)
 
             # train network
-            session.run([total_error,train_fn], feed_dict={obs_t_ph: obs_t_batch,
+            session.run(train_fn, feed_dict={obs_t_ph: obs_t_batch,
                                       act_t_ph: act_batch,
                                       rew_t_ph: rew_batch,
                                       obs_tp1_ph: obs_tp1_batch, 
-                                      done_mask_ph: done_mask,
+                                      done_mask_ph: done_batch,
                                       learning_rate: optimizer_spec.lr_schedule.value(t)})
 
             num_param_updates += 1
