@@ -34,7 +34,7 @@ def atari_learn(env,
     # This is just a rough estimate
     num_iterations = float(num_timesteps) / 4.0
 
-    lr_multiplier = 1.5
+    lr_multiplier = 1.0
     lr_schedule = PiecewiseSchedule([
                                          (0,                   1e-4 * lr_multiplier),
                                          (num_iterations / 10, 1e-4 * lr_multiplier),
@@ -43,7 +43,7 @@ def atari_learn(env,
                                     outside_value=5e-5 * lr_multiplier)
     optimizer = dqn.OptimizerSpec(
         constructor=tf.train.AdamOptimizer,
-        kwargs=dict(epsilon=1e-4),
+        kwargs=dict(epsilon=1e-2),
         lr_schedule=lr_schedule
     )
 
